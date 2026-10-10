@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>大脑模拟器 · Brain Simulator</title>
+<style>
+  :root {
+    --bg: #0b0e14;
+    --surface: #141a24;
+    --surface2: #1b2330;
+    --border: #28303f;
+    --text: #e8eef7;
+    --muted: #8a94a6;
+    --accent: #5eead4;
+    --accent2: #7aa2f7;
+    --bad: #f87171;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    background: radial-gradient(1200px 800px at 50% -10%, #16222f 0%, var(--bg) 60%);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .app { width: 100%; max-width: 440px; }
+
+  .header { text-align: center; margin-bottom: 20px; }
+  .header .logo {
+    font-size: 30px; font-weight: 800; letter-spacing: 2px;
+    background: linear-gradient(120deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .header .en { color: var(--muted); font-size: 12px; letter-spacing: 1px; margin-top: 4px; }
+  .header .slogan { color: var(--muted); font-size: 13px; margin-top: 8px; line-height: 1.6; }
+
+  .card {
+    display: block; text-decoration: none;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 16px; margin-bottom: 14px;
+    transition: transform .1s ease, border-color .2s ease;
+  }
+  .card:active { transform: scale(.98); }
+  .card:not(.soon):hover { border-color: var(--accent); }
+  .card .row { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; }
+  .card .num { font-size: 13px; font-weight: 700; color: var(--accent); font-family: "SF Mono", ui-monospace, Menlo, monospace; }
+  .card .title { font-size: 18px; font-weight: 700; color: var(--text); }
+  .card .desc { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 10px; }
+  .card .play { font-size: 14px; font-weight: 600; color: var(--accent); }
+
+  .card.soon { opacity: .55; }
+  .card.soon .num { color: var(--muted); }
+  .card.soon .play { color: var(--muted); }
+
+  .footer { text-align: center; color: var(--muted); font-size: 12px; line-height: 1.7; margin-top: 18px; }
+  .footer b { color: var(--accent); font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <div class="logo">大脑模拟器</div>
+      <div class="en">BRAIN SIMULATOR</div>
+      <div class="slogan">把脑科学的机制，做成你亲自踩进去的游戏</div>
+    </div>
+
+    <a class="card" href="dopamine_trap.html">
+      <div class="row"><span class="num">#01</span><span class="title">多巴胺陷阱</span></div>
+      <div class="desc">按一个按钮，亲身体验成瘾：高峰越来越矮（耐受）→ 基线越跌越低（适应）→ 一停就下探变红（戒断）。</div>
+      <div class="play">开始玩 →</div>
+    </a>
+
+    <a class="card" href="working_memory_game.html">
+      <div class="row"><span class="num">#02</span><span class="title">7 ± 2</span></div>
+      <div class="desc">为什么你记不住一串 9 个数字？亲身体验工作记忆的容量上限——神奇的数字 7±2。</div>
+      <div class="play">开始玩 →</div>
+    </a>
+
+    <div class="card soon">
+      <div class="row"><span class="num">#03</span><span class="title">小胶质细胞巡逻队</span></div>
+      <div class="desc">神经炎症的「好心办坏事」：它想保护你，却失控误伤了自己人。即将上线。</div>
+      <div class="play">敬请期待</div>
+    </div>
+
+    <div class="footer">每一集：<b>一个游戏</b> + <b>一个机制</b> + <b>一条硬核解释</b>。<br>你不用背任何术语，先亲手撞上一次大脑的规律。</div>
+  </div>
+</body>
+</html>

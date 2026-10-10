@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>7±2 · 工作记忆极限体验</title>
+<style>
+  :root {
+    --bg: #0b0e14;
+    --surface: #141a24;
+    --surface2: #1b2330;
+    --border: #28303f;
+    --text: #e8eef7;
+    --muted: #8a94a6;
+    --accent: #5eead4;
+    --good: #4ade80;
+    --bad: #f87171;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    background: radial-gradient(1200px 800px at 50% -10%, #16222f 0%, var(--bg) 60%);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .app {
+    width: 100%;
+    max-width: 420px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px 24px 24px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  }
+  .header { text-align: center; margin-bottom: 22px; }
+  .header .logo {
+    font-size: 34px; font-weight: 700; letter-spacing: 2px;
+    background: linear-gradient(120deg, var(--accent), #7aa2f7);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .header .sub { color: var(--muted); font-size: 13px; margin-top: 4px; letter-spacing: 1px; }
+
+  .screen.hidden { display: none; }
+
+  .btn {
+    display: block; width: 100%; padding: 15px;
+    border: none; border-radius: 12px;
+    font-size: 16px; font-weight: 600; letter-spacing: 1px;
+    cursor: pointer; transition: transform .08s ease, opacity .2s ease;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn.primary { background: var(--accent); color: #06251f; }
+  .btn.ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+
+  .muted { color: var(--muted); }
+  .card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 16px; margin: 14px 0;
+  }
+  .card h3 { margin: 0 0 8px; font-size: 15px; color: var(--accent); }
+  .card p { margin: 6px 0; font-size: 14px; line-height: 1.6; color: var(--text); }
+  .card .en { color: var(--muted); font-size: 12px; }
+
+  /* 状态栏 */
+  .status { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  #levelLabel { font-size: 15px; font-weight: 600; color: var(--accent); }
+  #phaseLabel { font-size: 13px; color: var(--muted); }
+
+  /* 显示区 */
+  .display {
+    min-height: 150px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 14px;
+    position: relative; overflow: hidden; margin-bottom: 16px;
+  }
+  #bigDigit {
+    font-size: 96px; font-weight: 700;
+    font-family: "SF Mono", ui-monospace, Menlo, monospace;
+    color: var(--text);
+  }
+  #bigDigit.pop { animation: pop .28s ease; }
+  @keyframes pop { 0% { transform: scale(.6); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+  .flash-good { box-shadow: inset 0 0 0 3px var(--good); }
+  .flash-bad { box-shadow: inset 0 0 0 3px var(--bad); }
+
+  /* 记忆槽（recall 阶段） */
+  .slots { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .slot {
+    width: 42px; height: 52px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; font-weight: 700;
+    font-family: "SF Mono", ui-monospace, Menlo, monospace;
+    border: 1px solid var(--border); color: var(--text); background: #0f141d;
+  }
+  .slot.filled { border-color: var(--accent); color: var(--accent); }
+  .slot.empty { color: var(--muted); opacity: .35; }
+
+  /* 数字键盘 */
+  .pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .key {
+    padding: 16px 0; font-size: 20px; font-weight: 600;
+    border: 1px solid var(--border); border-radius: 12px;
+    background: var(--surface2); color: var(--text); cursor: pointer;
+    transition: transform .06s ease;
+  }
+  .key:active { transform: scale(.95); background: #232e40; }
+  .key.fn { color: var(--accent); font-size: 18px; }
+  .key.submit { background: var(--accent); color: #06251f; border-color: transparent; }
+  .key:disabled { opacity: .3; cursor: default; }
+
+  /* 结果页 */
+  .score-big { text-align: center; margin: 8px 0; }
+  .score-big .num { font-size: 64px; font-weight: 800; color: var(--accent); }
+  .compare { font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 15px; letter-spacing: 4px; text-align: center; }
+  .compare .ok { color: var(--good); }
+  .compare .no { color: var(--bad); }
+  .note { font-size: 12px; color: var(--muted); text-align: center; margin-top: 10px; }
+</style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <div class="logo">7 ± 2</div>
+      <div class="sub">工作记忆极限体验 · Working Memory</div>
+    </div>
+
+    <!-- 开始页 -->
+    <section id="startScreen" class="screen">
+      <div class="card">
+        <h3>玩法</h3>
+        <p>屏幕上会依次出现一串数字，请你<b>按顺序</b>把它们复述出来。每一关多一位，直到你记不住为止。</p>
+        <p class="en">A classic digit-span test — feel the limit of your working memory.</p>
+      </div>
+      <button class="btn primary" id="startBtn">开始挑战</button>
+      <p class="note" id="bestNote"></p>
+    </section>
+
+    <!-- 游戏页 -->
+    <section id="gameScreen" class="screen hidden">
+      <div class="status">
+        <span id="levelLabel">第 1 关</span>
+        <span id="phaseLabel">准备…</span>
+      </div>
+      <div class="display" id="displayArea">
+        <div id="bigDigit">·</div>
+        <div class="slots hidden" id="slots"></div>
+      </div>
+      <div class="pad hidden" id="pad"></div>
+    </section>
+
+    <!-- 结果页 -->
+    <section id="resultScreen" class="screen hidden">
+      <div class="score-big">
+        <div class="muted">你最多记住了</div>
+        <div class="num" id="maxSpan">0</div>
+        <div class="muted">个数字</div>
+      </div>
+      <div class="compare" id="compare"></div>
+      <div class="card">
+        <h3>神奇的数字 7±2</h3>
+        <p>心理学家 <b>George Miller（1956）</b> 发现：人类工作记忆的容量大约只有 <b>7±2</b> 个「组块」（chunk）。</p>
+        <p>关键在于——限制的是「组块」，不是「数字个数」。把信息打包成有意义的组块，就能装下更多。<br>
+        <span class="en">例：1 9 4 9 1 0 8 1 很难记，但 1949 · 1081 只占两个组块。</span></p>
+        <p>这也解释了为什么专家记得更多：他们只是在更高层级上「组块化」了信息。</p>
+      </div>
+      <button class="btn primary" id="retryBtn">再玩一次</button>
+    </section>
+  </div>
+
+<script>
+(function () {
+  var START_LEVEL = 4;          // 起始位数
+  var DIGIT_MS = 950;           // 每个数字展示时长
+  var AFTER_LAST_MS = 800;      // 最后一个数字后到输入的间隔
+
+  var state = {
+    phase: 'start',             // start | show | recall | result
+    target: [],
+    recall: [],
+    level: START_LEVEL,
+    maxSpan: 0,
+    revealIdx: 0,
+  };
+  var timers = [];
+
+  var $ = function (id) { return document.getElementById(id); };
+  var startScreen = $('startScreen'), gameScreen = $('gameScreen'), resultScreen = $('resultScreen');
+  var levelLabel = $('levelLabel'), phaseLabel = $('phaseLabel');
+  var displayArea = $('displayArea'), bigDigit = $('bigDigit'), slots = $('slots'), pad = $('pad');
+
+  function clearTimers() { timers.forEach(clearInterval); timers.forEach(clearTimeout); timers = []; }
+  function show(el) { el.classList.remove('hidden'); }
+  function hide(el) { el.classList.add('hidden'); }
+  function switchScreen(s) {
+    hide(startScreen); hide(gameScreen); hide(resultScreen);
+    if (s === 'start') show(startScreen);
+    else if (s === 'game') show(gameScreen);
+    else show(resultScreen);
+  }
+
+  function bestScore() { return parseInt(localStorage.getItem('wm7_best') || '0', 10); }
+  function saveBest(n) {
+    if (n > bestScore()) localStorage.setItem('wm7_best', String(n));
+  }
+
+  function buildPad() {
+    pad.innerHTML = '';
+    var keys = ['1','2','3','4','5','6','7','8','9'];
+    keys.forEach(function (d) {
+      var b = document.createElement('button');
+      b.className = 'key'; b.textContent = d; b.dataset.d = d;
+      b.addEventListener('click', function () { pressDigit(d); });
+      pad.appendChild(b);
+    });
+    var del = document.createElement('button');
+    del.className = 'key fn'; del.textContent = '⌫';
+    del.addEventListener('click', pressBackspace);
+    pad.appendChild(del);
+
+    var zero = document.createElement('button');
+    zero.className = 'key'; zero.textContent = '0'; zero.dataset.d = '0';
+    zero.addEventListener('click', function () { pressDigit('0'); });
+    pad.appendChild(zero);
+
+    var ok = document.createElement('button');
+    ok.className = 'key submit'; ok.textContent = '确定'; ok.id = 'submitBtn';
+    ok.addEventListener('click', pressSubmit);
+    pad.appendChild(ok);
+  }
+
+  function startGame() {
+    clearTimers();
+    state.maxSpan = 0;
+    state.level = START_LEVEL;
+    switchScreen('game');
+    startRound();
+  }
+
+  function startRound() {
+    clearTimers();
+    state.target = randomDigits(state.level);
+    state.recall = [];
+    state.revealIdx = 0;
+    state.phase = 'show';
+
+    levelLabel.textContent = '第 ' + (state.level - START_LEVEL + 1) + ' 关 · ' + state.level + ' 位';
+    phaseLabel.textContent = '请记住下面的数字';
+    displayArea.classList.remove('flash-good', 'flash-bad');
+    show(bigDigit); hide(slots); hide(pad);
+    bigDigit.textContent = '准备';
+    bigDigit.classList.remove('pop');
+
+    // 倒计时后开始逐位展示
+    var t = setTimeout(function () {
+      revealNext();
+    }, 900);
+    timers.push(t);
+  }
+
+  function revealNext() {
+    if (state.revealIdx < state.target.length) {
+      bigDigit.textContent = state.target[state.revealIdx];
+      bigDigit.classList.remove('pop');
+      void bigDigit.offsetWidth; // 重触发动画
+      bigDigit.classList.add('pop');
+      state.revealIdx++;
+      var t = setTimeout(revealNext, DIGIT_MS);
+      timers.push(t);
+    } else {
+      var t2 = setTimeout(startRecall, AFTER_LAST_MS);
+      timers.push(t2);
+    }
+  }
+
+  function startRecall() {
+    state.phase = 'recall';
+    phaseLabel.textContent = '请按顺序输入';
+    hide(bigDigit); show(slots); show(pad);
+    renderSlots();
+  }
+
+  function renderSlots() {
+    slots.innerHTML = '';
+    for (var i = 0; i < state.target.length; i++) {
+      var s = document.createElement('div');
+      s.className = 'slot ' + (i < state.recall.length ? 'filled' : 'empty');
+      s.textContent = i < state.recall.length ? state.recall[i] : '·';
+      slots.appendChild(s);
+    }
+    var sub = document.getElementById('submitBtn');
+    if (sub) sub.disabled = (state.recall.length !== state.target.length);
+  }
+
+  function pressDigit(d) {
+    if (state.phase !== 'recall') return;
+    if (state.recall.length >= state.target.length) return;
+    state.recall.push(d);
+    renderSlots();
+  }
+
+  function pressBackspace() {
+    if (state.phase !== 'recall') return;
+    state.recall.pop();
+    renderSlots();
+  }
+
+  function pressSubmit() {
+    if (state.phase !== 'recall') return;
+    if (state.recall.length !== state.target.length) return;
+    var correct = state.recall.join('') === state.target.join('');
+    if (correct) {
+      displayArea.classList.add('flash-good');
+      state.maxSpan = state.level;
+      saveBest(state.maxSpan);
+      phaseLabel.textContent = '正确！下一关';
+      var t = setTimeout(function () {
+        state.level++;
+        startRound();
+      }, 900);
+      timers.push(t);
+    } else {
+      displayArea.classList.add('flash-bad');
+      showResult();
+    }
+  }
+
+  function showResult() {
+    state.phase = 'result';
+    $('maxSpan').textContent = state.maxSpan;
+    // 逐位对比
+    var html = '<div>正确答案</div>';
+    for (var i = 0; i < state.target.length; i++) {
+      var ok = state.recall[i] === state.target[i];
+      html += '<span class="' + (ok ? 'ok' : 'no') + '">' + state.target[i] + '</span>';
+    }
+    html += '<div class="muted" style="margin-top:8px">你的回答</div>';
+    for (var j = 0; j < state.recall.length; j++) {
+      var o = state.recall[j] === state.target[j];
+      html += '<span class="' + (o ? 'ok' : 'no') + '">' + state.recall[j] + '</span>';
+    }
+    $('compare').innerHTML = html;
+    switchScreen('result');
+  }
+
+  function randomDigits(n) {
+    var arr = [];
+    for (var i = 0; i < n; i++) arr.push(String(Math.floor(Math.random() * 10)));
+    return arr;
+  }
+
+  function refreshBestNote() {
+    var b = bestScore();
+    $('bestNote').textContent = b > 0 ? '历史最佳：' + b + ' 位' : '';
+  }
+
+  // 绑定
+  $('startBtn').addEventListener('click', startGame);
+  $('retryBtn').addEventListener('click', function () {
+    refreshBestNote();
+    startGame();
+  });
+
+  buildPad();
+  refreshBestNote();
+})();
+</script>
+</body>
+</html>

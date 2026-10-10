@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>多巴胺陷阱 · 快乐为什么越来越贵</title>
+<style>
+  :root {
+    --bg: #0b0e14;
+    --surface: #141a24;
+    --surface2: #1b2330;
+    --border: #28303f;
+    --text: #e8eef7;
+    --muted: #8a94a6;
+    --accent: #5eead4;
+    --accent2: #7aa2f7;
+    --bad: #f87171;
+    --good: #4ade80;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    background: radial-gradient(1200px 800px at 50% -10%, #1b1622 0%, var(--bg) 60%);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .app {
+    width: 100%; max-width: 440px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 26px 22px 22px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  }
+  .header { text-align: center; margin-bottom: 18px; }
+  .header .logo {
+    font-size: 26px; font-weight: 700; letter-spacing: 2px;
+    background: linear-gradient(120deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .header .sub { color: var(--muted); font-size: 12px; margin-top: 4px; letter-spacing: 1px; }
+
+  .screen.hidden { display: none; }
+
+  .btn {
+    display: block; width: 100%; padding: 15px; margin-top: 12px;
+    border: none; border-radius: 14px;
+    font-size: 16px; font-weight: 600; letter-spacing: 1px;
+    cursor: pointer; transition: transform .07s ease;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn.primary { background: var(--accent); color: #06251f; }
+  .btn.ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); padding: 11px; font-size: 14px; }
+
+  .card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 14px; margin: 12px 0;
+  }
+  .card h3 { margin: 0 0 8px; font-size: 15px; color: var(--accent); }
+  .card p { margin: 6px 0; font-size: 14px; line-height: 1.65; color: var(--text); }
+  .card .en { color: var(--muted); font-size: 12px; }
+
+  .muted { color: var(--muted); }
+
+  .stats { display: flex; gap: 8px; margin-bottom: 12px; }
+  .stat {
+    flex: 1; text-align: center; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 12px; padding: 10px 4px;
+  }
+  .stat .v { font-size: 22px; font-weight: 700; font-family: "SF Mono", ui-monospace, Menlo, monospace; color: var(--text); }
+  .stat .v.hot { color: var(--accent); }
+  .stat .k { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .chart { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: #0d1118; margin-bottom: 10px; }
+  canvas { display: block; width: 100%; height: 230px; }
+
+  .hint { text-align: center; font-size: 13px; color: var(--muted); min-height: 20px; margin: 4px 0 2px; transition: color .3s; }
+  .hint.warn { color: var(--bad); }
+
+  .legend { margin: 0 0 2px; padding: 8px 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; }
+  .legend .lg { font-size: 12px; color: var(--muted); line-height: 2.0; display: flex; align-items: center; }
+  .legend .mark { display: inline-block; width: 16px; height: 3px; margin-right: 8px; flex: none; border-radius: 1px; }
+
+  .arc { text-align: center; font-size: 12.5px; color: var(--muted); line-height: 1.8; margin: 10px 0 2px; }
+  .arc b { color: var(--accent); }
+
+  .score-big { text-align: center; margin: 6px 0; }
+  .score-big .num { font-size: 58px; font-weight: 800; color: var(--accent); }
+  .score-big .dip { font-size: 15px; color: var(--bad); }
+  .quote {
+    text-align: center; font-size: 14px; font-style: italic;
+    color: var(--accent2); margin: 14px 0; line-height: 1.7;
+  }
+</style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <div class="logo">多巴胺陷阱</div>
+      <div class="sub">亲身体验：快乐为什么越来越贵 · Dopamine &amp; Addiction</div>
+    </div>
+
+    <section id="startScreen" class="screen">
+      <div class="card">
+        <h3>下面有一个按钮</h3>
+        <p>按它，你会获得一次快感。想按几次按几次——但请<span style="color:var(--accent)">盯着中间那条曲线</span>看。</p>
+        <p class="en">There is a button below. Press it for a hit of pleasure. Press as many times as you like — but watch the curve.</p>
+      </div>
+      <button class="btn primary" id="startBtn">开始</button>
+    </section>
+
+    <section id="gameScreen" class="screen hidden">
+      <div class="stats">
+        <div class="stat"><div class="v" id="hitsV">0</div><div class="k">已按次数</div></div>
+        <div class="stat"><div class="v hot" id="pleasureV">60</div><div class="k">当前快感</div></div>
+        <div class="stat"><div class="v" id="baselineV">60</div><div class="k">当前基线</div></div>
+      </div>
+      <div class="chart"><canvas id="chart"></canvas></div>
+      <div class="legend">
+        <div class="lg"><span class="mark" style="background:repeating-linear-gradient(90deg,#8a94a6 0 4px,transparent 4px 7px)"></span>虚线 = 起始基线：你回不去的 60</div>
+        <div class="lg"><span class="mark" style="background:repeating-linear-gradient(90deg,#7aa2f7 0 2px,transparent 2px 5px)"></span>淡蓝线 = 最高峰：第一次冲到的最高点</div>
+        <div class="lg"><span class="mark" style="background:#f87171"></span>红色段 = 戒断：快感跌破了自身基线</div>
+      </div>
+      <div class="hint" id="hint">按一下「再来一次」试试</div>
+      <button class="btn primary" id="hitBtn">再来一次 · ⚡</button>
+      <button class="btn ghost" id="finishBtn">看结论 →</button>
+    </section>
+
+    <section id="resultScreen" class="screen hidden">
+      <div class="score-big">
+        <div class="muted">你一共按了</div>
+        <div class="num" id="finalHits">0</div>
+        <div class="muted">次「再来一次」</div>
+      </div>
+      <div class="score-big" style="margin-top:6px">
+        <div class="dip" id="baselineDrop"></div>
+      </div>
+
+      <div class="arc">这条曲线的完整故事：<br>高峰越来越矮（<b>耐受</b>）→ 基线越跌越低（<b>适应</b>）→ 一停就下探变红（<b>戒断</b>）→ 坚持够久才缓慢爬回（<b>恢复</b>）</div>
+
+      <div class="card">
+        <h3>① 多巴胺 ≠ 快乐，它是「想要」</h3>
+        <p>多巴胺编码的是<b>奖励预测误差</b>（reward prediction error）：实际奖励 − 预期奖励。预期被拉得越高，同样的刺激带来的快感越少——这就是图上高峰一次比一次矮的原因。</p>
+      </div>
+      <div class="card">
+        <h3>② 耐受 / 适应（快乐跑步机）</h3>
+        <p>你的「正常」基线被不断下调。再按，不是为了更快乐，而是为了<b>勉强回到正常</b>。这是 hedonic adaptation——快乐跑步机。</p>
+      </div>
+      <div class="card">
+        <h3>③ 戒断（withdrawal）</h3>
+        <p>停下来的痛苦，不是「没爽到」，而是<b>掉到了基线以下</b>。你继续按，其实是为了逃离那种难受，而不再是追逐快乐。</p>
+      </div>
+      <div class="card">
+        <h3>④ 恢复（recovery）</h3>
+        <p>只有长时间停止，基线才会缓慢回升。但恢复很慢，而且往往<b>回不到最初的 60</b>——这也是为什么复吸如此容易。</p>
+      </div>
+
+      <div class="quote">「上瘾的本质，是你为了回到起点，而不断远离起点。」</div>
+      <button class="btn primary" id="retryBtn">再体验一次</button>
+    </section>
+  </div>
+
+<script>
+(function () {
+  var START_BASELINE = 60;
+  var SPIKE_BASE = 38, SPIKE_DECAY = 0.90;
+  var BASELINE_STEP = 4.5, BASELINE_FLOOR = 6;
+  var WITHDRAW_IDLE = 2.5, WITHDRAW_DEPTH = 14;
+  var RECOVER_IDLE = 8, RECOVER_RATE = 0.02, RECOVER_FADE = 15;
+  var APPROACH = 3.0, APPROACH_WITHDRAW = 6.0;
+  var WINDOW_MS = 20000;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var startScreen = $('startScreen'), gameScreen = $('gameScreen'), resultScreen = $('resultScreen');
+  var canvas = $('chart'), ctx = canvas.getContext('2d');
+
+  var state = {
+    phase: 'start', hits: 0,
+    baseline: START_BASELINE, pleasure: START_BASELINE,
+    lastHit: -1, maxPleasure: START_BASELINE, inWithdrawal: false
+  };
+  var samples = [];
+  var lastFrame = performance.now();
+  var rafId = null;
+
+  function switchScreen(s) {
+    startScreen.classList.add('hidden');
+    gameScreen.classList.add('hidden');
+    resultScreen.classList.add('hidden');
+    if (s === 'start') startScreen.classList.remove('hidden');
+    else if (s === 'game') {
+      gameScreen.classList.remove('hidden');
+      requestAnimationFrame(sizeCanvas); // 显示后再测量，避免隐藏时尺寸为 0
+    }
+    else resultScreen.classList.remove('hidden');
+  }
+
+  function sizeCanvas() {
+    var dpr = window.devicePixelRatio || 1;
+    canvas.width = canvas.clientWidth * dpr;
+    canvas.height = canvas.clientHeight * dpr;
+  }
+
+  function onHit() {
+    if (state.phase !== 'game') return;
+    var spike = SPIKE_BASE * Math.pow(SPIKE_DECAY, state.hits);
+    state.pleasure = Math.min(100, state.pleasure + spike);
+    state.baseline = Math.max(BASELINE_FLOOR, state.baseline - BASELINE_STEP);
+    state.hits++;
+    state.lastHit = performance.now();
+    if (state.pleasure > state.maxPleasure) state.maxPleasure = state.pleasure;
+  }
+
+  function update(dt) {
+    var idle = -1;
+    if (state.lastHit >= 0) idle = (performance.now() - state.lastHit) / 1000;
+    if (idle > RECOVER_IDLE) {
+      state.baseline = Math.min(START_BASELINE, state.baseline + RECOVER_RATE * dt); // 长期坚持后基线缓慢回升
+    }
+    // 戒断深度：进入后下探，长时间坚持后逐渐归零（恢复）
+    var depth = 0;
+    if (idle > WITHDRAW_IDLE) {
+      var progress = idle > RECOVER_IDLE ? Math.min(1, (idle - RECOVER_IDLE) / RECOVER_FADE) : 0;
+      depth = WITHDRAW_DEPTH * (1 - progress);
+    }
+    state.inWithdrawal = depth > 0.5;
+    var target = state.baseline - depth;
+    var rate = state.inWithdrawal ? APPROACH_WITHDRAW : APPROACH;
+    var k = Math.min(1, rate * dt);
+    state.pleasure += (target - state.pleasure) * k;
+    if (state.pleasure > state.maxPleasure) state.maxPleasure = state.pleasure;
+  }
+
+  function updateHint() {
+    var el = $('hint');
+    el.classList.remove('warn');
+    var idle = state.lastHit >= 0 ? (performance.now() - state.lastHit) / 1000 : -1;
+    if (state.hits === 0) el.textContent = '按一下「再来一次」，感受第一次的高峰';
+    else if (state.hits <= 3) el.textContent = '很爽，对吗？记住现在这个高度';
+    else if (state.hits <= 6) el.textContent = '高峰越来越矮了 —— 这就是「耐受」';
+    else if (state.hits <= 10) el.textContent = '基线越跌越低 —— 这就是「适应」';
+    else { el.textContent = '你停不下来了 —— 这就是上瘾'; el.classList.add('warn'); }
+    if (idle > WITHDRAW_IDLE && state.hits >= 2) {
+      if (idle > RECOVER_IDLE) {
+        el.textContent = '坚持够久，曲线正缓慢爬回 —— 这就是「恢复」';
+      } else {
+        el.textContent = '一停就下探、变红 —— 这就是「戒断」';
+      }
+      el.classList.add('warn');
+    }
+  }
+
+  function renderStats() {
+    $('hitsV').textContent = state.hits;
+    $('pleasureV').textContent = Math.round(state.pleasure);
+    $('baselineV').textContent = Math.round(state.baseline);
+  }
+
+  function draw() {
+    var dpr = window.devicePixelRatio || 1;
+    var w = canvas.clientWidth, h = canvas.clientHeight;
+    if (w === 0 || h === 0) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    var now = performance.now();
+
+    // 绘图区留上下边距，保证「最高峰」「戒断」等文字不被裁切
+    var PAD_TOP = 22, PAD_BOTTOM = 22;
+    var plotH = h - PAD_TOP - PAD_BOTTOM;
+    var plotBottom = h - PAD_BOTTOM;
+    function yFor(v) { return PAD_TOP + (1 - v / 100) * plotH; }
+
+    // 起始基线（虚线）
+    var yStart = yFor(START_BASELINE);
+    ctx.strokeStyle = 'rgba(138,148,166,.5)';
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath(); ctx.moveTo(0, yStart); ctx.lineTo(w, yStart); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(138,148,166,.9)';
+    ctx.font = '11px sans-serif';
+    ctx.fillText('起始基线', 6, yStart - 4);
+
+    // 最高峰（淡线，提醒你再也回不去的高度）
+    var yMax = yFor(state.maxPleasure);
+    ctx.strokeStyle = 'rgba(122,162,247,.35)';
+    ctx.setLineDash([3, 5]);
+    ctx.beginPath(); ctx.moveTo(0, yMax); ctx.lineTo(w, yMax); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(122,162,247,.8)';
+    ctx.fillText('最高峰', w - 48, Math.max(11, yMax - 4));
+
+    // 采样点映射（时间窗滚动：最右 = 现在）
+    var pts = [];
+    for (var i = 0; i < samples.length; i++) {
+      var s = samples[i];
+      var age = now - s.t;
+      var x = w * (1 - age / WINDOW_MS);
+      var y = yFor(s.v);
+      pts.push({ x: x, y: y, below: s.v < s.b - 0.5 });
+    }
+
+    var breathe = Math.sin(now * 0.004); // 呼吸相位 -1..1
+
+    if (pts.length > 1) {
+      // 主曲线（呼吸线宽）
+      ctx.lineWidth = 2 + 0.6 * breathe;
+      ctx.strokeStyle = '#5eead4';
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (var j = 1; j < pts.length; j++) ctx.lineTo(pts[j].x, pts[j].y);
+      ctx.stroke();
+
+      // 面积填充（呼吸透明度）
+      ctx.lineTo(w, plotBottom); ctx.lineTo(pts[0].x, plotBottom); ctx.closePath();
+      ctx.fillStyle = 'rgba(94,234,212,' + (0.10 + 0.05 * (0.5 + 0.5 * breathe)) + ')';
+      ctx.fill();
+
+      // 戒断段（红色覆盖：快感低于自身基线）
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#f87171';
+      var k = 1;
+      while (k < pts.length) {
+        if (pts[k].below && pts[k - 1].below) {
+          ctx.beginPath();
+          ctx.moveTo(pts[k - 1].x, pts[k - 1].y);
+          while (k < pts.length && pts[k].below) { ctx.lineTo(pts[k].x, pts[k].y); k++; }
+          ctx.stroke();
+        } else {
+          k++;
+        }
+      }
+    }
+
+    // 当前点（呼吸光点）
+    if (pts.length >= 1) {
+      var last = pts[pts.length - 1];
+      var r = 4 + 1.5 * breathe;
+      var glow = state.inWithdrawal ? '#f87171' : '#5eead4';
+      ctx.shadowColor = glow;
+      ctx.shadowBlur = 10 + 6 * (0.5 + 0.5 * breathe);
+      ctx.fillStyle = glow;
+      ctx.beginPath(); ctx.arc(last.x, last.y, r, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
+
+      if (state.inWithdrawal) {
+        ctx.fillStyle = '#f87171';
+        ctx.font = '12px sans-serif';
+        var lx = Math.max(6, Math.min(last.x - 16, w - 56));
+        ctx.fillText('▼ 戒断', lx, Math.max(PAD_TOP + 2, last.y - 8));
+      }
+    }
+  }
+
+  function loop(now) {
+    var dt = (now - lastFrame) / 1000;
+    lastFrame = now;
+    if (state.phase === 'game') {
+      update(dt);
+      samples.push({ t: performance.now(), v: state.pleasure, b: state.baseline });
+      var cutoff = performance.now() - WINDOW_MS;
+      while (samples.length && samples[0].t < cutoff) samples.shift();
+      renderStats();
+      updateHint();
+    }
+    draw();
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function resetGame() {
+    state.hits = 0;
+    state.baseline = START_BASELINE;
+    state.pleasure = START_BASELINE;
+    state.lastHit = -1;
+    state.maxPleasure = START_BASELINE;
+    state.inWithdrawal = false;
+    samples = [];
+    renderStats();
+  }
+
+  function showResult() {
+    state.phase = 'result';
+    $('finalHits').textContent = state.hits;
+    $('baselineDrop').textContent = '你的快乐基线从 60 跌到了 ' + Math.round(state.baseline) + '，已低于你开始的地方';
+    switchScreen('result');
+  }
+
+  $('startBtn').addEventListener('click', function () {
+    resetGame();
+    state.phase = 'game';
+    switchScreen('game');
+  });
+  $('hitBtn').addEventListener('click', onHit);
+  $('finishBtn').addEventListener('click', showResult);
+  $('retryBtn').addEventListener('click', function () {
+    resetGame();
+    state.phase = 'game';
+    switchScreen('game');
+  });
+  window.addEventListener('resize', sizeCanvas);
+
+  sizeCanvas();
+  switchScreen('start');
+  rafId = requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
